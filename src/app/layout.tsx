@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   title: "OMMEB Querétaro | IQmat",
   description:
     "Plataforma de estudio autogestivo para la Olimpiada Mexicana de Matemáticas para Educación Básica en Querétaro.",
+  other: adsenseClientId
+    ? {
+        "google-adsense-account": adsenseClientId,
+      }
+    : undefined,
 };
 
 export default function RootLayout({
