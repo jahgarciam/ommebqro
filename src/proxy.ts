@@ -1,7 +1,18 @@
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export default async function proxy(request: NextRequest) {
+  const host = request.headers.get("host") ?? "";
+
+  if (host.includes("--ommebqro.netlify.app")) {
+    const url = request.nextUrl.clone();
+    url.protocol = "https:";
+    url.hostname = "ommebqro.netlify.app";
+
+    return NextResponse.redirect(url, 308);
+  }
+
   return updateSession(request);
 }
 

@@ -4,11 +4,21 @@ import { createClient } from "@/lib/supabase/server";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 
 function getSiteUrl() {
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "http://localhost:3000";
+  if (process.env.NODE_ENV === "development") {
+    return "http://localhost:3000";
+  }
 
-  return siteUrl;
+  const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+
+  if (
+    configuredUrl &&
+    configuredUrl.startsWith("https://ommebqro.netlify.app") &&
+    !configuredUrl.includes("--ommebqro.netlify.app")
+  ) {
+    return configuredUrl;
+  }
+
+  return "https://ommebqro.netlify.app";
 }
 
 export default async function LoginPage() {
@@ -26,7 +36,7 @@ export default async function LoginPage() {
     });
 
     if (error || !data.url) {
-      redirect("/login?error=google");
+      redirect(`${siteUrl}/login?error=google`);
     }
 
     redirect(data.url);
