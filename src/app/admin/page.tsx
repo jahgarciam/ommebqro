@@ -37,29 +37,58 @@ export default async function AdminPage() {
 
   const subjects = (subjectsData ?? []) as Subject[];
 
+  async function signOut() {
+    "use server";
+
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+
+    redirect("/login");
+  }
+
   return (
     <main className="min-h-screen bg-[#F5F5F5] px-6 py-8">
       <section className="mx-auto max-w-6xl">
         <div className="rounded-3xl bg-white p-6 shadow-sm md:p-8">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[#1F2E67]">
-            Panel de administración
-          </p>
+          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-[#1F2E67]">
+                Panel de administración
+              </p>
 
-          <h1 className="mt-2 text-3xl font-bold text-slate-950 md:text-4xl">
-            Bienvenido, {profile?.first_name ?? "administrador"}
-          </h1>
+              <h1 className="mt-2 text-3xl font-bold text-slate-950 md:text-4xl">
+                Bienvenido, {profile?.first_name ?? "administrador"}
+              </h1>
 
-          <p className="mt-3 max-w-3xl text-slate-600">
-            Elige una materia para crear o alimentar temas olímpicos. Cada
-            entrada que publiques podrá incluir video, lectura, cuestionario,
-            ejemplos paso a paso y ejercicios propuestos.
-          </p>
+              <p className="mt-3 max-w-3xl text-slate-600">
+                Elige una materia para crear o alimentar temas olímpicos. Cada
+                entrada que publiques podrá incluir video, lectura,
+                cuestionario, ejemplos paso a paso y ejercicios propuestos.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row md:shrink-0">
+              <Link
+                href="/dashboard?vista=alumno"
+                className="inline-flex justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Vista de alumno
+              </Link>
+
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="inline-flex w-full justify-center rounded-2xl bg-[#1F2E67] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                >
+                  Cerrar sesión
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
 
         <section className="mt-6">
-          <h2 className="mb-4 text-xl font-bold text-slate-950">
-            Materias
-          </h2>
+          <h2 className="mb-4 text-xl font-bold text-slate-950">Materias</h2>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {subjects.map((subject) => (
@@ -108,9 +137,6 @@ export default async function AdminPage() {
               title="Avisos"
               description="Publicar comunicados y recordatorios."
             />
-
-           
-          
           </div>
         </section>
       </section>

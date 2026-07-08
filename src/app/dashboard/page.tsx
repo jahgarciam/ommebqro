@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AdSlot } from "@/components/ads/AdSlot";
 import { gradeLabels, type Grade } from "@/lib/grade";
 import { createClient } from "@/lib/supabase/server";
 import { AnnouncementsBlock } from "@/components/student/AnnouncementsBlock";
-
 
 type Subject = {
   id: string;
@@ -64,6 +62,12 @@ type SubjectProgress = {
   percent: number;
 };
 
+type DashboardPageProps = {
+  searchParams?: Promise<{
+    vista?: string | string[];
+  }>;
+};
+
 function getRecommendedLevelName(profile: Profile) {
   if (!profile.levels) return "Nivel recomendado";
 
@@ -85,7 +89,14 @@ function getSubjectProgressColor(percent: number) {
   return "bg-slate-300";
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: DashboardPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const vistaParam = Array.isArray(resolvedSearchParams.vista)
+    ? resolvedSearchParams.vista[0]
+    : resolvedSearchParams.vista;
+
   const supabase = await createClient();
 
   const {
@@ -116,12 +127,28 @@ export default async function DashboardPage() {
 
   const profile = profileData as Profile | null;
 
-  if (profile?.role === "admin") {
+  const isAdminStudentView =
+    profile?.role === "admin" && vistaParam === "alumno";
+
+  if (profile?.role === "admin" && !isAdminStudentView) {
     redirect("/admin");
   }
 
-  if (!profile?.accepted_privacy_notice_at) {
+  if (profile?.role !== "admin" && !profile?.accepted_privacy_notice_at) {
     redirect("/onboarding");
+  }
+
+  if (!profile) {
+    redirect("/onboarding");
+  }
+
+  async function signOut() {
+    "use server";
+
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+
+    redirect("/login");
   }
 
   const { data: subjectsData } = await supabase
@@ -139,6 +166,7 @@ export default async function DashboardPage() {
           .from("topics")
           .select("id, title, slug, subject_id")
           .eq("is_active", true)
+          .eq("student_visible", true)
           .in("subject_id", subjectIds)
       : { data: [] };
 
@@ -208,27 +236,58 @@ export default async function DashboardPage() {
     <main className="min-h-screen bg-[#F5F5F5] px-6 py-8">
       <section className="mx-auto max-w-6xl">
         <div className="rounded-3xl bg-white p-6 shadow-sm md:p-8">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[#1F2E67]">
-            Dashboard
-          </p>
+          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-[#1F2E67]">
+                Dashboard
+              </p>
 
-          <h1 className="mt-2 text-3xl font-bold text-slate-950 md:text-4xl">
-            Hola, {profile.first_name ?? "estudiante"}
-          </h1>
+              <h1 className="mt-2 text-3xl font-bold text-slate-950 md:text-4xl">
+                Hola, {profile.first_name ?? "estudiante"}
+              </h1>
 
-          <p className="mt-3 text-slate-600">
-            Tu nivel recomendado es{" "}
-            <span className="font-semibold text-[#1F2E67]">
-              {getRecommendedLevelName(profile)}
-            </span>
-            .
-          </p>
+              <p className="mt-3 text-slate-600">
+                Tu nivel recomendado es{" "}
+                <span className="font-semibold text-[#1F2E67]">
+                  {getRecommendedLevelName(profile)}
+                </span>
+                .
+              </p>
 
-          {profile.grade ? (
-            <p className="mt-1 text-sm text-slate-500">
-              Grado registrado: {gradeLabels[profile.grade]}
-            </p>
-          ) : null}
+              {profile.grade ? (
+                <p className="mt-1 text-sm text-slate-500">
+                  Grado registrado: {gradeLabels[profile.grade]}
+                </p>
+              ) : null}
+
+              {isAdminStudentView ? (
+                <p className="mt-3 rounded-2xl bg-[#F7F2E7] px-4 py-3 text-sm font-semibold text-slate-700">
+                  Estás viendo la plataforma como alumno. Tu panel de
+                  administración sigue disponible.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row md:shrink-0">
+              {isAdminStudentView ? (
+                <Link
+                  href="/admin"
+                  className="inline-flex justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Volver al panel admin
+                </Link>
+              ) : null}
+
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="inline-flex w-full justify-center rounded-2xl bg-[#1F2E67] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                >
+                  Cerrar sesión
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
 
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr]">
@@ -314,9 +373,7 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-<AnnouncementsBlock />
-
-<AdSlot placement="dashboard-bottom" />
+        <AnnouncementsBlock />
       </section>
     </main>
   );

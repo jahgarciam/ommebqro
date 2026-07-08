@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 
 function getSiteUrl() {
   const siteUrl =
@@ -48,12 +49,7 @@ export default async function LoginPage() {
         </p>
 
         <form action={signInWithGoogle} className="mt-8">
-          <button
-            type="submit"
-            className="w-full rounded-2xl bg-[#1F2E67] px-5 py-4 font-semibold text-white transition hover:opacity-90"
-          >
-            Continuar con Google
-          </button>
+          <GoogleLoginButton />
         </form>
 
         <p className="mt-6 text-sm leading-6 text-slate-500">

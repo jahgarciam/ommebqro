@@ -51,7 +51,7 @@ export default function AlgebraResourcePage() {
           </div>
 
           <p className="mt-8 text-sm font-semibold uppercase tracking-wide text-[#1F2E67]">
-            Recursos públicos · Álgebra
+            Recursos · Álgebra
           </p>
 
           <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">

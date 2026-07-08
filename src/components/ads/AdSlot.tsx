@@ -1,16 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect } from "react";
 
 type AdPlacement =
   | "landing-bottom"
   | "dashboard-bottom"
   | "announcements-bottom"
   | "calendar-bottom"
-  | "lesson-completed-bottom";
+  | "lesson-completed-bottom"
+  | "resources-left"
+  | "resources-right"
+  | "resources-bottom";
 
 type AdSlotProps = {
   placement: AdPlacement;
+  className?: string;
 };
 
 declare global {
@@ -19,79 +23,51 @@ declare global {
   }
 }
 
-const slotByPlacement: Record<AdPlacement, string | undefined> = {
-  "landing-bottom": process.env.NEXT_PUBLIC_ADSENSE_SLOT_LANDING_BOTTOM,
-  "dashboard-bottom": process.env.NEXT_PUBLIC_ADSENSE_SLOT_DASHBOARD_BOTTOM,
-  "announcements-bottom":
-    process.env.NEXT_PUBLIC_ADSENSE_SLOT_ANNOUNCEMENTS_BOTTOM,
-  "calendar-bottom": process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALENDAR_BOTTOM,
-  "lesson-completed-bottom":
-    process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON_COMPLETED_BOTTOM,
-};
+function getSlotId(placement: AdPlacement) {
+  const slots: Record<AdPlacement, string | undefined> = {
+    "landing-bottom": process.env.NEXT_PUBLIC_ADSENSE_SLOT_LANDING_BOTTOM,
+    "dashboard-bottom": process.env.NEXT_PUBLIC_ADSENSE_SLOT_DASHBOARD_BOTTOM,
+    "announcements-bottom":
+      process.env.NEXT_PUBLIC_ADSENSE_SLOT_ANNOUNCEMENTS_BOTTOM,
+    "calendar-bottom": process.env.NEXT_PUBLIC_ADSENSE_SLOT_CALENDAR_BOTTOM,
+    "lesson-completed-bottom":
+      process.env.NEXT_PUBLIC_ADSENSE_SLOT_LESSON_COMPLETED_BOTTOM,
+    "resources-left": process.env.NEXT_PUBLIC_ADSENSE_SLOT_RESOURCES_LEFT,
+    "resources-right": process.env.NEXT_PUBLIC_ADSENSE_SLOT_RESOURCES_RIGHT,
+    "resources-bottom": process.env.NEXT_PUBLIC_ADSENSE_SLOT_RESOURCES_BOTTOM,
+  };
 
-export function AdSlot({ placement }: AdSlotProps) {
-  const pushedRef = useRef(false);
+  return slots[placement];
+}
 
+export function AdSlot({ placement, className = "" }: AdSlotProps) {
   const adsEnabled = process.env.NEXT_PUBLIC_ADS_ENABLED === "true";
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_CLIENT_ID;
-  const adSlot = slotByPlacement[placement];
-
-  const adId = useMemo(() => `ad-${placement}`, [placement]);
+  const slotId = getSlotId(placement);
 
   useEffect(() => {
-    if (!adsEnabled || !clientId || !adSlot || pushedRef.current) {
-      return;
-    }
+    if (!adsEnabled || !clientId || !slotId) return;
 
     try {
       window.adsbygoogle = window.adsbygoogle || [];
       window.adsbygoogle.push({});
-      pushedRef.current = true;
     } catch (error) {
-      console.error("adsense-push-error", error);
+      console.warn("AdSense no pudo cargar el anuncio.", error);
     }
-  }, [adsEnabled, clientId, adSlot]);
+  }, [adsEnabled, clientId, slotId]);
 
-  if (!adsEnabled) {
+  if (!adsEnabled || !clientId || !slotId) {
     return null;
   }
 
-  if (!clientId || !adSlot) {
-    if (process.env.NODE_ENV === "production") {
-      return null;
-    }
-
-    return (
-      <aside
-        className="my-6 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-center shadow-sm"
-        data-ad-placement={placement}
-      >
-        <p className="text-xs font-semibold text-amber-800">
-          Publicidad no configurada
-        </p>
-        <p className="mt-1 text-xs text-amber-700">
-          Falta clientId o slot para: {placement}
-        </p>
-      </aside>
-    );
-  }
-
   return (
-    <aside
-      className="my-6 rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-sm"
-      data-ad-placement={placement}
-    >
-      <p className="mb-2 text-xs text-slate-500">Publicidad</p>
-
-      <ins
-        id={adId}
-        className="adsbygoogle block min-h-24"
-        style={{ display: "block" }}
-        data-ad-client={clientId}
-        data-ad-slot={adSlot}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      />
-    </aside>
+    <ins
+      className={`adsbygoogle block ${className}`}
+      style={{ display: "block" }}
+      data-ad-client={clientId}
+      data-ad-slot={slotId}
+      data-ad-format="auto"
+      data-full-width-responsive="true"
+    />
   );
 }
